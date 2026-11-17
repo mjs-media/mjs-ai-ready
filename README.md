@@ -11,8 +11,8 @@ New builds on the MJS themes already do the basics in the theme (`inc/seo.php`);
 
 - **Without SSH:** run `bin/build-zip`, then in WP admin go to Plugins → Add New → Upload Plugin and choose `dist/mjs-ai-ready.zip`. Activate, then fill in Settings → AI ready. The same zip is attached to every GitHub release.
 - **With SSH:** `./deploy.sh <ssh-host> <wp-path>/wp-content/plugins/mjs-ai-ready`, or copy the zip up and `wp plugin install mjs-ai-ready.zip --activate`.
-- **Updates** come from the GitHub release's `mjs-ai-ready.zip`. While the repo is private, the site needs `define( 'MJSAIR_GITHUB_TOKEN', 'github_pat_…' );` in `wp-config.php` (read-only, this repo). If the repo is made public, no token is needed. The Plugins screen says when updates can't be fetched.
-- Each client's settings are kept in `sites/<domain>.json` (no secrets, never deployed) so they can be re-applied with `wp ai-ready setup - < sites/<domain>.json`.
+- **Updates** come from the GitHub release's `mjs-ai-ready.zip`. The repo is public, so sites need no token; they check about every six hours and auto-update. `wp ai-ready status` shows whether updates are working.
+- Keep each client's settings in `sites/<domain>.json` so they can be re-applied with `wp ai-ready setup - < sites/<domain>.json`. The folder is git-ignored (the repo is public and settings can include addresses kept off the client's site); it lives in Dropbox only.
 
 ## What the plugin does
 
@@ -27,7 +27,7 @@ New builds on the MJS themes already do the basics in the theme (`inc/seo.php`);
 | **IndexNow** | Key served at `/<key>.txt`. Publishing, updating or unpublishing a page queues a ping to `api.indexnow.org` (sent by WP-Cron 10 s later). Only on live sites: `production` environment and search engines allowed. |
 | **Verification** | Prints `google-site-verification` and `msvalidate.01` meta tags on the homepage. Paste the code or the whole tag. |
 | **Homepage description** | Optional: uses the summary as the homepage meta description when there's no SEO plugin and the theme doesn't add one. |
-| **Updates** | From GitHub releases, like the Client Kit (`inc/updater.php`), using the `mjs-ai-ready.zip` attached to the release. Needs a token in `wp-config.php` while the repo is private (above). Git checkouts and symlinked copies are never updated. |
+| **Updates** | From GitHub releases, like the Client Kit (`inc/updater.php`), using the `mjs-ai-ready.zip` attached to the release. No token needed (public repo). Git checkouts and symlinked copies are never updated. |
 
 ## WP-CLI (over SSH)
 
@@ -61,11 +61,7 @@ The audit checks: search engines allowed (Settings → Reading), https, physical
    ./deploy.sh <ssh-host> <wp-path>/wp-content/plugins/mjs-ai-ready
    ssh <ssh-host> 'cd <wp-path> && wp plugin activate mjs-ai-ready'
    ```
-   Add the update token to `wp-config.php` above `/* That's all, stop editing! */`:
-   ```php
-   define( 'MJSAIR_GITHUB_TOKEN', 'github_pat_…' ); // read-only, this repo only
-   ```
-   (Sites with the Client Kit can reuse `MJSCK_GITHUB_TOKEN` if that token is given access to this repo too.) Never commit a token.
+   Updates need no token (public repo). Never commit secrets or client data to this repo: it's public.
 3. **Fill in the details**: copy `examples/ai-ready.example.json`, write the client's facts in plain English (from their site, Google Business Profile and a quick call), then `wp ai-ready setup - < client.json`. Or type them on Settings → AI ready.
 4. **Fix what the audit finds**:
    - `wp ai-ready fix-robots` if there's a physical robots.txt (it lists any custom rules that will stop applying; purge LiteSpeed/Cloudflare cache after).
@@ -80,7 +76,7 @@ The audit checks: search engines allowed (Settings → Reading), https, physical
 ### Per-site checklist
 
 - [ ] Before report sent
-- [ ] Plugin deployed, activated, token in `wp-config.php`, `wp ai-ready status` clean
+- [ ] Plugin deployed and activated, `wp ai-ready status` clean (updates working)
 - [ ] Settings filled in (summary, type, services with pages, town/areas, hours, contacts, profiles, FAQs, key pages)
 - [ ] `wp ai-ready audit`: no "need fixing"; physical robots.txt dealt with
 - [ ] FAQ block on a page; check it in https://validator.schema.org/ and Google's Rich Results Test
@@ -155,4 +151,4 @@ Like the Client Kit:
 | `inc/updater.php` | GitHub updates |
 | `report/` | The Mac report tool (Node 20+, `@anthropic-ai/sdk`) |
 | `bin/build-zip` | Builds `dist/mjs-ai-ready.zip` (plugin files only) |
-| `sites/` | Each client's settings JSON |
+| `sites/` | Each client's settings JSON (git-ignored, local only) |

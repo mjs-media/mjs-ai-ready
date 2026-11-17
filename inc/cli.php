@@ -236,9 +236,7 @@ function mjsair_update_status() {
 	}
 	$release = mjsair_latest_release( true );
 	if ( $release ) {
-		return 'Working: latest release ' . $release['version'] . ( mjsair_github_token() ? ' (token)' : ' (no token needed)' );
+		return 'Working: latest release ' . $release['version'];
 	}
-	return mjsair_github_token()
-		? 'Not working: the token in wp-config.php can\'t read github.com/' . MJSAIR_REPO
-		: 'Not working: add MJSAIR_GITHUB_TOKEN to wp-config.php';
+	return 'Not working: can\'t read github.com/' . MJSAIR_REPO . ' releases (check the server can reach api.github.com)';
 }

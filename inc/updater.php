@@ -8,13 +8,10 @@
  * opted into WordPress auto-updates, so sites update themselves within a day.
  *
  * Releases carry a built mjs-ai-ready.zip (bin/build-zip), which is what sites
- * install. While the repo is private, each site needs a read-only token in wp-config.php:
- *
- *   define( 'MJSAIR_GITHUB_TOKEN', 'github_pat_…' );
- *
- * A fine-grained token with "Contents: Read-only" on this repo. Sites that
- * already have MJSCK_GITHUB_TOKEN (the Client Kit's) can use that instead if
- * the token is given access to this repo too. Never commit it.
+ * install. The repo is public, so no token is needed. A token in wp-config.php
+ * (MJSAIR_GITHUB_TOKEN, or the Client Kit's MJSCK_GITHUB_TOKEN) is still sent if
+ * present, which only matters if the repo ever goes private again; when GitHub
+ * refuses it, the request is retried without it.
  *
  * The plugin header's `Update URI: https://github.com/mjs-media/mjs-ai-ready`
  * keeps WordPress.org from ever matching a plugin of the same name, and makes
@@ -55,10 +52,16 @@ function mjsair_github_get( $path, $args = array(), $accept = 'application/vnd.g
 		'Accept'               => $accept,
 		'X-GitHub-Api-Version' => '2022-11-28',
 	);
+	$url  = 'https://api.github.com/' . ltrim( $path, '/' );
+	$args = array_merge( array( 'timeout' => 10 ), $args );
 	if ( mjsair_github_token() ) {
-		$headers['Authorization'] = 'Bearer ' . mjsair_github_token();
+		$res = wp_remote_get( $url, array_merge( $args, array( 'headers' => $headers + array( 'Authorization' => 'Bearer ' . mjsair_github_token() ) ) ) );
+		// A token without access to this repo (or an expired one) mustn't block public updates.
+		if ( ! in_array( wp_remote_retrieve_response_code( $res ), array( 401, 403, 404 ), true ) ) {
+			return $res;
+		}
 	}
-	return wp_remote_get( 'https://api.github.com/' . ltrim( $path, '/' ), array_merge( array( 'timeout' => 10, 'headers' => $headers ), $args ) );
+	return wp_remote_get( $url, array_merge( $args, array( 'headers' => $headers ) ) );
 }
 
 /**
@@ -188,7 +191,7 @@ add_filter( 'upgrader_pre_download', function ( $reply, $package ) {
 	$code     = wp_remote_retrieve_response_code( $res );
 	$location = wp_remote_retrieve_header( $res, 'location' );
 	if ( is_wp_error( $res ) || $code < 300 || $code >= 400 || ! $location ) {
-		$why = is_wp_error( $res ) ? $res->get_error_message() : 'HTTP ' . $code . ( mjsair_github_token() ? '' : ' (is MJSAIR_GITHUB_TOKEN set in wp-config.php?)' );
+		$why = is_wp_error( $res ) ? $res->get_error_message() : 'HTTP ' . $code;
 		return new WP_Error( 'mjsair_download', 'Could not download MJS AI Ready from GitHub: ' . $why );
 	}
 	return download_url( $location, 300 );
@@ -226,9 +229,8 @@ add_filter( 'plugin_row_meta', function ( $meta, $file ) {
 	}
 	if ( mjsair_is_dev_copy() ) {
 		$meta[] = 'Development copy: updates from GitHub are off';
-	} elseif ( ! mjsair_github_token() && ! mjsair_latest_release() ) {
-		// A public repo needs no token; only nag when GitHub can't be read without one.
-		$meta[] = '<strong>Updates need MJSAIR_GITHUB_TOKEN in wp-config.php</strong>';
+	} elseif ( ! mjsair_latest_release() ) {
+		$meta[] = '<strong>Can\'t check GitHub for updates right now</strong>';
 	}
 	return $meta;
 }, 10, 2 );
