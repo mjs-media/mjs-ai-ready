@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MJS AI Ready
  * Description: Helps search engines and AI search tools (ChatGPT, Claude, Perplexity, Google, Bing) read and describe the business correctly: crawler-friendly robots.txt, /llms.txt, LocalBusiness, Service and FAQ structured data, IndexNow and Search Console / Bing verification. Settings → AI ready. Updates itself from GitHub.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: MJS Media
  * Author URI: https://www.mjsmedia.co.uk/
  * Requires at least: 6.0
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MJSAIR_VERSION', '1.0.1' );
+define( 'MJSAIR_VERSION', '1.0.2' );
 define( 'MJSAIR_DIR', __DIR__ );
 define( 'MJSAIR_FILE', __FILE__ );
 define( 'MJSAIR_URL', plugin_dir_url( __FILE__ ) );

@@ -60,6 +60,8 @@ function mjsair_page_description( $id ) {
 	if ( ! $desc ) {
 		$desc = (string) get_post_field( 'post_excerpt', $id );
 	}
+	/** Themes that keep page descriptions in code can supply them here. */
+	$desc = (string) apply_filters( 'mjsair_page_description', $desc, $id );
 	// Yoast/Rank Math variables such as %%sitename%% mean nothing outside the page.
 	return mjsair_plain( preg_replace( '/%%?[a-z_]+%%?/i', '', $desc ) );
 }

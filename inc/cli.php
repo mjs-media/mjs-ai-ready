@@ -138,7 +138,7 @@ class MJSAIR_CLI {
 			array( 'item' => 'Structured data', 'value' => $o['schema'] ? ( $seo[ mjsair_seo_plugin() ] ?? 'Own JSON-LD block' ) : 'Off' ),
 			array( 'item' => 'IndexNow', 'value' => $o['indexnow'] ? 'Key ' . mjsair_indexnow_key_url() . ( mjsair_is_live() ? '' : ' (not sending: not a live production site)' ) . ( is_array( $last ) ? '; last: ' . $last['message'] . ', ' . human_time_diff( $last['time'] ) . ' ago' : '' ) : 'Off' ),
 			array( 'item' => 'Verification', 'value' => 'Google ' . ( $o['google_verify'] ? 'set' : '-' ) . ', Bing ' . ( $o['bing_verify'] ? 'set' : '-' ) ),
-			array( 'item' => 'Updates', 'value' => mjsair_github_token() ? 'From GitHub (token set)' : 'No GitHub token in wp-config.php: no automatic updates' ),
+			array( 'item' => 'Updates', 'value' => mjsair_update_status() ),
 		);
 		\WP_CLI\Utils\format_items( 'table', $rows, array( 'item', 'value' ) );
 	}
@@ -228,3 +228,17 @@ class MJSAIR_CLI {
 }
 
 WP_CLI::add_command( 'ai-ready', 'MJSAIR_CLI' );
+
+/** Can this site actually fetch releases? (A token can exist without access to this repo.) */
+function mjsair_update_status() {
+	if ( function_exists( 'mjsair_is_dev_copy' ) && mjsair_is_dev_copy() ) {
+		return 'Development copy: updates off';
+	}
+	$release = mjsair_latest_release( true );
+	if ( $release ) {
+		return 'Working: latest release ' . $release['version'] . ( mjsair_github_token() ? ' (token)' : ' (no token needed)' );
+	}
+	return mjsair_github_token()
+		? 'Not working: the token in wp-config.php can\'t read github.com/' . MJSAIR_REPO
+		: 'Not working: add MJSAIR_GITHUB_TOKEN to wp-config.php';
+}
