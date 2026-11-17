@@ -52,6 +52,7 @@ async function ask(client, question, town) {
   const messages = [{ role: 'user', content: question }];
   const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5, user_location: { type: 'approximate', country: 'GB', ...(town ? { city: town } : {}) } }];
   let response;
+  const blocks = [];
   for (let turn = 0; turn < 4; turn++) {
     response = await client.beta.messages.create({
       model: MODEL,
@@ -63,6 +64,8 @@ async function ask(client, question, town) {
       tools,
       messages,
     });
+    blocks.push(...response.content);
+    if (process.env.MJSAIR_DEBUG) console.error('turn', turn, response.stop_reason, response.content.map((b) => b.type + (b.citations ? `(${b.citations.length})` : '')).join(' '));
     if (response.stop_reason !== 'pause_turn') break;
     messages.push({ role: 'assistant', content: response.content });
   }
@@ -72,7 +75,7 @@ async function ask(client, question, town) {
   const answer = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
   const cited = new Set();
   const found = new Set();
-  for (const b of response.content) {
+  for (const b of blocks) {
     if (b.type === 'text') for (const c of b.citations || []) if (c.url) cited.add(c.url);
     if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) for (const r of b.content) if (r.url) found.add(r.url);
   }
@@ -104,9 +107,11 @@ export async function aiChecks({ business, town, services, site }, log = () => {
         ...q,
         answer: redactPhones(r.answer),
         mentioned: !!name && norm(r.answer).includes(name),
-        citedSite: r.cited.some(onSite),
+        // With dynamic filtering the model reads results through code execution, so text often has no
+        // citations: also count the website as linked when the answer names its address.
+        citedSite: r.cited.some(onSite) || r.answer.toLowerCase().includes(host),
         foundSite: r.found.some(onSite),
-        sources: r.cited.slice(0, 8),
+        sources: (r.cited.length ? r.cited : r.found).slice(0, 8),
         error: r.error || '',
         model: r.model,
       });

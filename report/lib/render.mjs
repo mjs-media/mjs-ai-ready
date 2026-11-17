@@ -11,6 +11,27 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const font = (f) => readFileSync(path.join(here, '../assets/fonts', f)).toString('base64');
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+
+// Just enough markdown for quoted AI answers: paragraphs, bullet lists, bold. Everything is escaped first.
+function mdLite(text) {
+  const inline = (t) => esc(t.replace(/^#+\s*/, '')).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*\*/g, '');
+  let html = '';
+  let list = false;
+  for (const raw of String(text).split(/\n/)) {
+    const line = raw.trim();
+    const bullet = line.match(/^[-*•]\s+(.*)$/);
+    if (bullet) {
+      if (!list) html += '<ul>';
+      list = true;
+      html += `<li>${inline(bullet[1])}</li>`;
+      continue;
+    }
+    if (list) html += '</ul>';
+    list = false;
+    if (line) html += `<p>${inline(line)}</p>`;
+  }
+  return html + (list ? '</ul>' : '');
+}
 const LABEL = { pass: 'Good', warn: 'Worth fixing', fail: 'Needs fixing', info: 'Note' };
 const pill = (s) => `<span class="pill is-${s}">${LABEL[s] || '—'}</span>`;
 const date = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -37,11 +58,11 @@ function aiSection(ai, before) {
     .map((r) => {
       const p = prev(r);
       const yesno = (v) => (v ? '<b class="yes">Yes</b>' : '<b class="no">No</b>');
-      const answer = r.answer ? esc(r.answer.length > 900 ? r.answer.slice(0, 880).replace(/\s+\S*$/, '') + '…' : r.answer).replace(/\n+/g, '<br>') : `<em>${esc(r.error || 'No answer.')}</em>`;
+      const answer = r.answer ? mdLite(r.answer.length > 1600 ? r.answer.slice(0, 1580).replace(/\s+\S*$/, '') + '…' : r.answer) : `<em>${esc(r.error || 'No answer.')}</em>`;
       return `<div class="qa">
         <div class="q">“${esc(r.text)}”</div>
         <div class="a">${answer}</div>
-        <div class="signals"><span>Mentions you: ${yesno(r.mentioned)}${p ? ` <i>(before: ${p.mentioned ? 'yes' : 'no'})</i>` : ''}</span><span>Links to your website: ${yesno(r.citedSite)}${p ? ` <i>(before: ${p.citedSite ? 'yes' : 'no'})</i>` : ''}</span></div>
+        <div class="signals"><span>Mentions you: ${yesno(r.mentioned)}${p ? ` <i>(before: ${p.mentioned ? 'yes' : 'no'})</i>` : ''}</span><span>Points to your website: ${yesno(r.citedSite)}${p ? ` <i>(before: ${p.citedSite ? 'yes' : 'no'})</i>` : ''}</span><span>Your website came up in its search: ${yesno(r.foundSite)}${p ? ` <i>(before: ${p.foundSite ? 'yes' : 'no'})</i>` : ''}</span></div>
       </div>`;
     })
     .join('');
@@ -166,7 +187,7 @@ table{width:100%;border-collapse:collapse}
 .pill.is-pass{background:var(--pass-bg);color:var(--pass)}.pill.is-warn{background:var(--warn-bg);color:var(--warn)}.pill.is-fail{background:var(--fail-bg);color:var(--fail)}.pill.is-info{background:var(--info-bg);color:var(--info)}
 .qa{border-left:4px solid var(--cyan);background:#f5fcff;padding:10px 14px;margin:0 0 12px;break-inside:avoid;border-radius:0 5px 5px 0}
 .q{font-weight:700;font-size:11pt}
-.a{margin:6px 0;font-size:10pt}
+.a{margin:6px 0;font-size:10pt}.a p{margin:0 0 5px}.a ul{margin:0 0 6px;padding-left:18px}.a li{margin:0 0 3px}
 .signals{display:flex;gap:18px;font-size:9pt;color:var(--muted)}
 .yes{color:var(--pass)}.no{color:var(--fail)}
 .bots th{text-align:left;font-size:8.5pt;color:var(--muted);padding:0 6px 4px}
