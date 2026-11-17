@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# AI readiness report, run from Matt's Mac. See README.md → "The report".
+#   bin/report <ssh-host|-> <wp-path|-> <public-url> [--mode=before|after|recheck] [...]
+set -euo pipefail
+dir="$(cd "$(dirname "$0")/../report" && pwd)"
+if [ ! -d "$dir/node_modules/@anthropic-ai/sdk" ]; then
+	(cd "$dir" && npm install --silent)
+fi
+exec node "$dir/report.mjs" "$@"

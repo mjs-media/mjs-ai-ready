@@ -1,0 +1,9 @@
+{
+  "name": "mjs-ai-ready-report",
+  "private": true,
+  "type": "module",
+  "description": "AI readiness report for MJS Websites clients. Runs on Matt's Mac, never on client servers.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.9.0"
+  }
+}

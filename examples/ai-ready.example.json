@@ -1,0 +1,39 @@
+{
+  "name": "Example Removals",
+  "type": "MovingCompany",
+  "summary": "Example Removals is a family-run removals company in Bexhill-on-Sea. We move homes and offices across Sussex and Kent, with packing, storage and house clearance. Fully insured, BAR members since 1998.",
+  "street": "1 High Street",
+  "locality": "Bexhill-on-Sea",
+  "region": "East Sussex",
+  "postcode": "TN40 1AA",
+  "country": "GB",
+  "show_address": 1,
+  "areas": ["Bexhill-on-Sea", "Hastings", "Eastbourne", "East Sussex", "Kent"],
+  "hours": [
+    { "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:00", "closes": "17:30" },
+    { "days": ["Saturday"], "opens": "09:00", "closes": "12:00" }
+  ],
+  "hours_note": "Closed bank holidays.",
+  "services": [
+    { "name": "House removals", "description": "Full and part loads across Sussex, Kent and the UK.", "url": "/house-removals/" },
+    { "name": "Storage", "description": "Clean, secure containerised storage, by the week.", "url": "/storage/" }
+  ],
+  "contacts": [
+    { "type": "email", "label": "Office", "value": "office@example.co.uk" },
+    { "type": "form", "label": "Free quote", "value": "/contact/" }
+  ],
+  "same_as": ["https://www.facebook.com/example", "https://maps.google.com/?cid=0000000000"],
+  "faqs": [
+    { "q": "How far ahead should I book?", "a": "Four to six weeks is ideal, but we can often move you sooner." },
+    { "q": "Do you provide boxes?", "a": "Yes. We deliver boxes and packing materials free before your move." }
+  ],
+  "key_pages": ["/house-removals/", "/storage/", "/about/", "/contact/"],
+  "google_verify": "",
+  "bing_verify": "",
+  "robots_mode": "allow_all",
+  "llms": 1,
+  "llms_posts": 10,
+  "schema": 1,
+  "indexnow": 1,
+  "home_description": 0
+}
