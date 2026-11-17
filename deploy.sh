@@ -9,7 +9,7 @@ for f in mjs-ai-ready.php inc/*.php; do php -l "$f" >/dev/null; done
 rsync -az --delete \
 	--exclude '.git' --exclude '.github' --exclude '.gitignore' --exclude '.DS_Store' \
 	--exclude 'README.md' --exclude 'deploy.sh' --exclude 'bin' --exclude 'report' --exclude 'reports' \
-	--exclude 'examples' \
+	--exclude 'examples' --exclude 'sites' --exclude 'dist' \
 	-e "ssh -o ControlMaster=auto -o ControlPath=$HOME/.ssh/cm-%C -o ControlPersist=10m" \
 	./ "$target_host:$target_path/"
 echo "Deployed to $target_host:$target_path"

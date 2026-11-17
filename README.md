@@ -5,7 +5,14 @@ A WordPress plugin and a report tool for the **AI Ready Upgrade**: a one-off job
 - **The plugin** (`mjs-ai-ready.php`, `inc/`, `assets/`) goes on the client's site. It works on any WordPress site (block themes, Divi, Elementor, Yoast, Rank Math) and doesn't need the MJS Client Kit.
 - **The report tool** (`bin/report`, `report/`) runs on Matt's Mac only. It audits a site over SSH and from outside, asks Claude what AI search knows about the business, and writes a branded HTML + PDF report. API keys stay on the Mac.
 
-New builds on the MJS themes already do all this in the theme (`inc/seo.php`), so this plugin is for existing sites.
+New builds on the MJS themes already do the basics in the theme (`inc/seo.php`); the MJS Websites theme hands robots.txt, llms.txt and the business schema to this plugin when it's active, so the plugin can go on those sites too.
+
+## Installing on a site
+
+- **Without SSH:** run `bin/build-zip`, then in WP admin go to Plugins → Add New → Upload Plugin and choose `dist/mjs-ai-ready.zip`. Activate, then fill in Settings → AI ready. The same zip is attached to every GitHub release.
+- **With SSH:** `./deploy.sh <ssh-host> <wp-path>/wp-content/plugins/mjs-ai-ready`, or copy the zip up and `wp plugin install mjs-ai-ready.zip --activate`.
+- **Updates** come from the GitHub release's `mjs-ai-ready.zip`. While the repo is private, the site needs `define( 'MJSAIR_GITHUB_TOKEN', 'github_pat_…' );` in `wp-config.php` (read-only, this repo). If the repo is made public, no token is needed. The Plugins screen says when updates can't be fetched.
+- Each client's settings are kept in `sites/<domain>.json` (no secrets, never deployed) so they can be re-applied with `wp ai-ready setup - < sites/<domain>.json`.
 
 ## What the plugin does
 
@@ -20,7 +27,7 @@ New builds on the MJS themes already do all this in the theme (`inc/seo.php`), s
 | **IndexNow** | Key served at `/<key>.txt`. Publishing, updating or unpublishing a page queues a ping to `api.indexnow.org` (sent by WP-Cron 10 s later). Only on live sites: `production` environment and search engines allowed. |
 | **Verification** | Prints `google-site-verification` and `msvalidate.01` meta tags on the homepage. Paste the code or the whole tag. |
 | **Homepage description** | Optional: uses the summary as the homepage meta description when there's no SEO plugin and the theme doesn't add one. |
-| **Updates** | From GitHub releases, exactly like the Client Kit (`inc/updater.php`). Needs a token in `wp-config.php` (below). Git checkouts and symlinked copies are never updated. |
+| **Updates** | From GitHub releases, like the Client Kit (`inc/updater.php`), using the `mjs-ai-ready.zip` attached to the release. Needs a token in `wp-config.php` while the repo is private (above). Git checkouts and symlinked copies are never updated. |
 
 ## WP-CLI (over SSH)
 
@@ -130,7 +137,7 @@ Like the Client Kit:
 
 1. Bump `Version:` and `MJSAIR_VERSION` in `mjs-ai-ready.php`.
 2. Commit, then `git tag vX.Y.Z && git push && git push --tags`.
-3. `gh release create vX.Y.Z --notes "…"`. Sites with a token pick it up within about six hours and auto-update.
+3. `bin/build-zip`, then `gh release create vX.Y.Z dist/mjs-ai-ready.zip --notes "…"`. The zip must be attached: it's what sites download. Sites pick it up within about six hours and auto-update.
 
 `./deploy.sh <ssh-host> <plugin-path>` copies the working copy straight to a site (lints first; skips the report tool, README and git files).
 
@@ -147,3 +154,5 @@ Like the Client Kit:
 | `inc/cli.php` | `wp ai-ready …` |
 | `inc/updater.php` | GitHub updates |
 | `report/` | The Mac report tool (Node 20+, `@anthropic-ai/sdk`) |
+| `bin/build-zip` | Builds `dist/mjs-ai-ready.zip` (plugin files only) |
+| `sites/` | Each client's settings JSON |

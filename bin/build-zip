@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Build dist/mjs-ai-ready.zip: the plugin files only, unpacking to mjs-ai-ready/.
+# Upload it in WP admin (Plugins → Add New → Upload Plugin), and attach it to each
+# GitHub release so sites update from it: gh release create vX.Y.Z dist/mjs-ai-ready.zip
+set -euo pipefail
+cd "$(dirname "$0")/.."
+for f in mjs-ai-ready.php inc/*.php; do php -l "$f" >/dev/null; done
+stage="$(mktemp -d)"
+trap 'rm -rf "$stage"' EXIT
+rsync -a \
+	--exclude '.git' --exclude '.github' --exclude '.gitignore' --exclude '.DS_Store' \
+	--exclude 'README.md' --exclude 'deploy.sh' --exclude 'bin' --exclude 'report' --exclude 'reports' \
+	--exclude 'examples' --exclude 'sites' --exclude 'dist' \
+	./ "$stage/mjs-ai-ready/"
+mkdir -p dist
+rm -f dist/mjs-ai-ready.zip
+(cd "$stage" && zip -qr -X "$OLDPWD/dist/mjs-ai-ready.zip" mjs-ai-ready)
+version="$(sed -n 's/^ \* Version: *//p' mjs-ai-ready.php)"
+echo "Built dist/mjs-ai-ready.zip (version $version)"

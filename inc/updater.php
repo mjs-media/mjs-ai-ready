@@ -7,7 +7,8 @@
  * Dashboard → Updates and the Plugins screen like any other plugin. The plugin is
  * opted into WordPress auto-updates, so sites update themselves within a day.
  *
- * The repo is private, so each site needs a read-only token in wp-config.php:
+ * Releases carry a built mjs-ai-ready.zip (bin/build-zip), which is what sites
+ * install. While the repo is private, each site needs a read-only token in wp-config.php:
  *
  *   define( 'MJSAIR_GITHUB_TOKEN', 'github_pat_…' );
  *
@@ -49,9 +50,9 @@ function mjsair_github_token() {
 }
 
 /** GET from the GitHub API, with the token if there is one. */
-function mjsair_github_get( $path, $args = array() ) {
+function mjsair_github_get( $path, $args = array(), $accept = 'application/vnd.github+json' ) {
 	$headers = array(
-		'Accept'               => 'application/vnd.github+json',
+		'Accept'               => $accept,
 		'X-GitHub-Api-Version' => '2022-11-28',
 	);
 	if ( mjsair_github_token() ) {
@@ -77,9 +78,17 @@ function mjsair_latest_release( $force = false ) {
 	if ( 200 === $code ) {
 		$r = json_decode( wp_remote_retrieve_body( $res ), true );
 		if ( ! empty( $r['tag_name'] ) && ! empty( $r['zipball_url'] ) ) {
+			// Prefer the built mjs-ai-ready.zip attached to the release (plugin files only);
+			// fall back to GitHub's source zip, which also carries the Mac report tool.
+			$package = $r['zipball_url'];
+			foreach ( (array) ( $r['assets'] ?? array() ) as $asset ) {
+				if ( MJSAIR_SLUG . '.zip' === ( $asset['name'] ?? '' ) && ! empty( $asset['url'] ) ) {
+					$package = $asset['url'];
+				}
+			}
 			$release = array(
 				'version' => ltrim( $r['tag_name'], 'vV' ),
-				'package' => $r['zipball_url'],
+				'package' => $package,
 				'url'     => $r['html_url'] ?? 'https://github.com/' . MJSAIR_REPO,
 				'notes'   => (string) ( $r['body'] ?? '' ),
 				'date'    => (string) ( $r['published_at'] ?? '' ),
@@ -174,7 +183,8 @@ add_filter( 'upgrader_pre_download', function ( $reply, $package ) {
 	if ( false !== $reply || ! is_string( $package ) || 0 !== strpos( $package, 'https://api.github.com/repos/' . MJSAIR_REPO . '/' ) ) {
 		return $reply;
 	}
-	$res      = mjsair_github_get( substr( $package, strlen( 'https://api.github.com/' ) ), array( 'redirection' => 0 ) );
+	$is_asset = false !== strpos( $package, '/releases/assets/' );
+	$res      = mjsair_github_get( substr( $package, strlen( 'https://api.github.com/' ) ), array( 'redirection' => 0 ), $is_asset ? 'application/octet-stream' : 'application/vnd.github+json' );
 	$code     = wp_remote_retrieve_response_code( $res );
 	$location = wp_remote_retrieve_header( $res, 'location' );
 	if ( is_wp_error( $res ) || $code < 300 || $code >= 400 || ! $location ) {
@@ -216,7 +226,8 @@ add_filter( 'plugin_row_meta', function ( $meta, $file ) {
 	}
 	if ( mjsair_is_dev_copy() ) {
 		$meta[] = 'Development copy: updates from GitHub are off';
-	} elseif ( ! mjsair_github_token() ) {
+	} elseif ( ! mjsair_github_token() && ! mjsair_latest_release() ) {
+		// A public repo needs no token; only nag when GitHub can't be read without one.
 		$meta[] = '<strong>Updates need MJSAIR_GITHUB_TOKEN in wp-config.php</strong>';
 	}
 	return $meta;
